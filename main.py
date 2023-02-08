@@ -8,6 +8,9 @@ from collections import defaultdict
 import math
 import numpy as np
 from collections import Counter
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import MultinomialNB
 
 
 # Leer el archivo de texto "entrenamiento.txt" en un DataFrame de pandas
@@ -28,7 +31,6 @@ print(df.head())
 # Separar el dataset en un 80% para entrenamiento y un 20% para pruebas
 X_train, X_test, y_train, y_test = train_test_split(df['message'], df['label'], test_size=0.2, random_state=42)
 
-# Mostrar la cantidad de registros en el conjunto de entrenamiento y pruebas
 print("Cantidad de registros en el conjunto de entrenamiento: ", len(X_train))
 print("Cantidad de registros en el conjunto de pruebas: ", len(X_test))
 
@@ -43,7 +45,7 @@ def build_model(X_train, y_train):
         else:
             spam_words.update(words)
             
-    # Calcular la probabilidad a priori de cada clase
+    # Calcular la probabilidad  de cada clase
     num_ham_messages = sum(y_train == 0)
     num_spam_messages = sum(y_train == 1)
     p_ham = num_ham_messages / len(y_train)
@@ -95,19 +97,14 @@ else:
     print("El mensaje es: Spam")
 
 
-#usando libreria sklearn
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.model_selection import train_test_split
-from sklearn.naive_bayes import MultinomialNB
-
+# Usando libreria
 # Hacer split de data entre training y testing 
-X_train, X_test, y_train, y_test = train_test_split(df['message'], df['label'], test_size=0.2, random_state=42)
 
 # Convertir el mensjae a numerico
 vectorizer = CountVectorizer()
 X_train_vectorized = vectorizer.fit_transform(X_train)
 
-# Entrenar el modelo Multinomial Naive Bayes
+# Entrenar el modelo 
 clf = MultinomialNB()
 clf.fit(X_train_vectorized, y_train)
 
