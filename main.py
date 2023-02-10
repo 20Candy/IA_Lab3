@@ -5,7 +5,6 @@ import pandas as pd
 import re
 from sklearn.model_selection import train_test_split
 from collections import defaultdict
-import math
 import numpy as np
 from collections import Counter
 from sklearn.feature_extraction.text import CountVectorizer
@@ -163,10 +162,12 @@ clf = MultinomialNB()
 clf.fit(X_train_vectorized, y_train)
 
 # Ecualuar el modelo
-#trainning
+
+######### SUBSET TRAIN #########
 X_train_vectorized = vectorizer.transform(X_train)
 print("\nExactitud (Libreria):", clf.score(X_train_vectorized, y_train))
 
+######### SUBSET TEST #########
 X_test_vectorized = vectorizer.transform(X_test)
 print("Exactitud *():", clf.score(X_test_vectorized, y_test))
 
