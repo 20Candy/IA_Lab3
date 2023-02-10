@@ -12,12 +12,16 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 
+#=======================================Task 1.1 - Lectura y limpieza del dataset=========================================================
 
 # Leer el archivo de texto "entrenamiento.txt" en un DataFrame de pandas
 df = pd.read_csv("entrenamiento.txt", sep='\t', header=None, names=['label', 'message'])
 
 # Limpiar los datos de caracteres especiales en la columna "message"
 df['message'] = df['message'].apply(lambda x: re.sub(r'[^\w\s]', '', x))
+
+#eliminar numeros
+df['message'] = df['message'].apply(lambda x: re.sub(r'\d+', '', x))
 
 # Convertir el mensaje a minúsculas
 df['message'] = df['message'].str.lower()
@@ -32,49 +36,81 @@ print(df.head())
 X_train, X_test, y_train, y_test = train_test_split(df['message'], df['label'], test_size=0.2, random_state=42)
 
 print("Cantidad de registros en el conjunto de entrenamiento: ", len(X_train))
+
 print("Cantidad de registros en el conjunto de pruebas: ", len(X_test))
 
+#=======================================Task 1.2 Construcción del modelo=========================================================
+
 def build_model(X_train, y_train):
-    # Contar cuántas veces aparece cada palabra en cada clase
-    ham_words = Counter()
-    spam_words = Counter()
+    ham_words = []
+    spam_words = []
+
     for message, label in zip(X_train, y_train):
         words = message.split()
         if label == 0:
-            ham_words.update(words)
+            for word in words:
+                ham_words.append(word)
         else:
-            spam_words.update(words)
-            
+            for word in words:
+                spam_words.append(word)
+               
+    # Count the frequency of each word in the ham and spam messages
+    ham_word_counts = Counter(ham_words)
+    spam_word_counts = Counter(spam_words)
+    
     # Calcular la probabilidad  de cada clase
-    num_ham_messages = sum(y_train == 0)
-    num_spam_messages = sum(y_train == 1)
-    p_ham = num_ham_messages / len(y_train)
-    p_spam = num_spam_messages / len(y_train)
+    cant_ham = len(ham_words)
+    cant_spam = len(spam_words)
+    total_words = cant_ham + cant_spam
+    probability_ham = cant_ham / total_words
+    probability_spam = cant_spam / total_words
     
-    # Calcular la probabilidad condicional de cada palabra dado cada clase
-    num_words = sum(ham_words.values()) + sum(spam_words.values())
-    p_word_given_ham = {word: (count + 1) / (num_words + len(ham_words)) for word, count in ham_words.items()}
-    p_word_given_spam = {word: (count + 1) / (num_words + len(spam_words)) for word, count in spam_words.items()}
-    
-    return p_ham, p_spam, p_word_given_ham, p_word_given_spam
+    return {'ham': probability_ham, 'spam': probability_spam, 'ham_word_counts': ham_word_counts, 'spam_word_counts': spam_word_counts}
 
 def classify_message(model, message):
-    p_ham, p_spam, p_word_given_ham, p_word_given_spam = model
     words = message.split()
+    probability_ham = model['ham']
+    probability_spam = model['spam']
+    ham_word_counts = model['ham_word_counts']
+    spam_word_counts = model['spam_word_counts']
     
-    # Calcular la probabilidad de que el mensaje sea ham o spam
-    log_p_ham = np.log(p_ham)
-    log_p_spam = np.log(p_spam)
+    # Estimate the probability of each word being ham or spam
     for word in words:
-        if word in p_word_given_ham:
-            log_p_ham += np.log(p_word_given_ham[word])
-        if word in p_word_given_spam:
-            log_p_spam += np.log(p_word_given_spam[word])
+        ham_count = ham_word_counts.get(word, 0)
+        spam_count = spam_word_counts.get(word, 0)
+        total_count = ham_count + spam_count
+        word_prob_ham = (ham_count + 1) / (total_count + 2)
+        word_prob_spam = (spam_count + 1) / (total_count + 2)
+        
+        probability_ham *= word_prob_ham
+        probability_spam *= word_prob_spam
     
-    return 0 if log_p_ham > log_p_spam else 1
+    if probability_ham > probability_spam:
+        return 0
+    else:
+        return 1
+
 
 # Construir el modelo de Bayes con suavización de Laplace
 model = build_model(X_train, y_train)
+
+######### SUBSET TRAIN #########
+
+# Prueba del modelo en los datos de prueba
+predictions = []
+for message in X_train:
+    prediction = classify_message(model, message)
+    predictions.append(prediction)
+
+# Evaluar la precisión del modelo
+correct = 0
+for prediction, label in zip(predictions, y_train):
+    if prediction == label:
+        correct += 1
+
+print("\nExactitud (Modelo Propio) (Training):", correct / len(predictions))
+
+######### SUBSET TEST #########
 
 # Prueba del modelo en los datos de prueba
 predictions = []
@@ -83,20 +119,38 @@ for message in X_test:
     predictions.append(prediction)
 
 # Evaluar la precisión del modelo
-accuracy = np.mean(predictions == y_test)
-print("Accuracy: {:.2f}%".format(accuracy * 100))
+correct = 0
+for prediction, label in zip(predictions, y_test):
+    if prediction == label:
+        correct += 1
+        
+print("Exactitud (Modelo Propio) (Test):", correct / len(predictions))
 
+
+#=======================================Task 1.3 Clasificacion de mensajes futuros=========================================================
 #Inpunt del usuario
-print("Ingrese el mensaje a clasificar: ")
-mensaje = input()
-result = classify_message(model, mensaje)
+while True:
+    print("\nIngrese el mensaje a clasificar: ")
+    mensaje = input()
+    
+    # Limpiar los datos de caracteres especiales en la columna "message"
+    mensaje = re.sub(r'[^\w\s]', '', mensaje)
+    mensaje = mensaje.lower()
+    
+    result = classify_message(model, mensaje)
+    
+    if result == 0:
+        print("\nEl mensaje es: Ham")
+    else:
+        print("\nEl mensaje es: Spam")
+        
+    print("\nDesea continuar? (Y/N) (A continuacion se mostrara la exactitud del modelo generado con SKLEARN)")
+    continuar = input()
+    if continuar == "N" or continuar == "n":
+        break
 
-if result == 0:
-    print("El mensaje es: Ham")
-else:
-    print("El mensaje es: Spam")
 
-
+#=======================================Task 1.4 - Comparacion de Librerias========================================================
 # Usando libreria
 # Hacer split de data entre training y testing 
 
@@ -109,5 +163,13 @@ clf = MultinomialNB()
 clf.fit(X_train_vectorized, y_train)
 
 # Ecualuar el modelo
+#trainning
+X_train_vectorized = vectorizer.transform(X_train)
+print("\nExactitud (Libreria):", clf.score(X_train_vectorized, y_train))
+
 X_test_vectorized = vectorizer.transform(X_test)
-print("Accuracy:", clf.score(X_test_vectorized, y_test))
+print("Exactitud *():", clf.score(X_test_vectorized, y_test))
+
+
+
+
