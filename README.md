@@ -1,6 +1,6 @@
 # IA_Lab3
 
-Carol Arévalo, Stefano Aragoni, Luis Santos, Diego Perdomo, y Jose Miguel Gonzales
+Carol Arévalo, Stefano Aragoni, Luis Santos
 
 ## Comparación entre implementaciones
 ![imagen](https://user-images.githubusercontent.com/54907552/218278097-c67d636e-b088-4f55-9863-77533bb0e37b.png)
