@@ -165,11 +165,11 @@ clf.fit(X_train_vectorized, y_train)
 
 ######### SUBSET TRAIN #########
 X_train_vectorized = vectorizer.transform(X_train)
-print("\nExactitud (Libreria):", clf.score(X_train_vectorized, y_train))
+print("\nExactitud (Libreria) (Train):", clf.score(X_train_vectorized, y_train))
 
 ######### SUBSET TEST #########
 X_test_vectorized = vectorizer.transform(X_test)
-print("Exactitud *():", clf.score(X_test_vectorized, y_test))
+print("Exactitud (Libreria) (Test):", clf.score(X_test_vectorized, y_test))
 
 
 
